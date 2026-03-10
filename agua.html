@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Player SWF</title>
+  <title>Flashback</title>
   <script src="ruffle/ruffle.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
@@ -212,7 +212,7 @@
 <div id="app">
 
   <div id="topbar">
-    <span id="title">◈ SWF Player</span>
+    <span id="title">◈ Player</span>
     <div id="controls">
       <button class="ctrl-btn" id="btn-fullscreen" title="Tela cheia">⛶ fullscreen</button>
     </div>
@@ -233,14 +233,13 @@
 </div>
 
 <script>
-  const SWF_FILE = "agua.swf";
-
   const statusDot   = document.getElementById("status-dot");
   const statusLabel = document.getElementById("status-label");
   const statusFile  = document.getElementById("status-file");
   const errorMsg    = document.getElementById("error-msg");
   const errorDetail = document.getElementById("error-detail");
   const container   = document.getElementById("game-container");
+  let player = null; // Variável global para o player
 
   function setStatus(state, label) {
     statusDot.className = state;
@@ -254,8 +253,43 @@
     console.error("[SWF Player]", msg);
   }
 
+  // Função para alternar tela cheia
+  function toggleFullscreen() {
+    if (!player) return; // Sai se o player não estiver pronto
+
+    // Verifica se está em tela cheia
+    const isInFullscreen = document.fullscreenElement || document.mozFullScreenElement || document.webkitFullscreenElement || document.msFullscreenElement;
+
+    if (isInFullscreen) {
+      // Sai da tela cheia
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      } else if (document.mozCancelFullScreen) { // Firefox
+        document.mozCancelFullScreen();
+      } else if (document.webkitExitFullscreen) { // Chrome, Safari e Opera
+        document.webkitExitFullscreen();
+      } else if (document.msExitFullscreen) { // IE/Edge
+        document.msExitFullscreen();
+      }
+    } else {
+      // Entra em tela cheia
+      if (player.requestFullscreen) {
+        player.requestFullscreen();
+      } else if (player.mozRequestFullScreen) { // Firefox
+        player.mozRequestFullScreen();
+      } else if (player.webkitRequestFullscreen) { // Chrome, Safari e Opera
+        player.webkitRequestFullscreen();
+      } else if (player.msRequestFullscreen) { // IE/Edge
+        player.msRequestFullscreen();
+      } else if (container.requestFullscreen) { // Fallback para o container se o player falhar
+        container.requestFullscreen();
+      }
+    }
+  }
+
   window.addEventListener("load", () => {
-    statusFile.textContent = SWF_FILE;
+    // Atualiza o nome do arquivo exibido na barra de status
+    statusFile.textContent = "agua.swf"; // Nome fixo aqui também
     setStatus("loading", "carregando ruffle...");
 
     if (!window.RufflePlayer) {
@@ -270,31 +304,38 @@
       return;
     }
 
-    const player = ruffle.createPlayer();
+    player = ruffle.createPlayer(); // Atribui à variável global
     player.style.width  = "100%";
     player.style.height = "100%";
     container.appendChild(player);
 
     setStatus("loading", "carregando swf...");
 
+    // Carrega o arquivo diretamente aqui
     player.load({
-      url: SWF_FILE,
-      scale: "showAll",   // preserva proporção original do SWF, letterbox se necessário
+      url: "agua.swf", // Nome do arquivo colocado diretamente
+      scale: "showAll",
       quality: "high",
-      letterbox: "on",    // barras pretas em vez de cortar
-      salign: "",         // centraliza o conteúdo
+      letterbox: "on",
+      salign: "",
     })
     .then(() => {
       setStatus("ready", "rodando");
     })
     .catch(err => {
-      showError(`Falha ao carregar ${SWF_FILE}: ${err?.message ?? err}`);
+      showError(`Falha ao carregar agua.swf: ${err?.message ?? err}`);
     });
 
-    // botão fullscreen
-    document.getElementById("btn-fullscreen").addEventListener("click", () => {
-      player.requestFullscreen?.() ?? container.requestFullscreen?.();
-    });
+    // Botão fullscreen
+    document.getElementById("btn-fullscreen").addEventListener("click", toggleFullscreen);
+  });
+
+  // Event listener para tecla "f"
+  document.addEventListener("keydown", (event) => {
+    if (event.key.toLowerCase() === "f") {
+      event.preventDefault(); // Previne comportamentos padrão ao pressionar 'f'
+      toggleFullscreen();
+    }
   });
 </script>
 
