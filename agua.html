@@ -1,111 +1,302 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Player SWF</title>
+  <script src="ruffle/ruffle.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
 
-<title>Player SWF</title>
+    :root {
+      --bg: #0a0a0a;
+      --surface: #111;
+      --border: #222;
+      --accent: #00e5ff;
+      --accent-dim: #00e5ff22;
+      --text: #ccc;
+      --error: #ff4d4d;
+    }
 
-<script src="ruffle/ruffle.js"></script>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
-<style>
+    body {
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      font-family: 'Share Tech Mono', monospace;
+      color: var(--text);
+      overflow: hidden;
+    }
 
-*{
-margin:0;
-padding:0;
-box-sizing:border-box;
-}
+    /* grade de fundo sutil */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 40px 40px;
+      opacity: 0.35;
+      pointer-events: none;
+      z-index: 0;
+    }
 
-body{
+    #app {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      width: 95vw;
+      height: 95vh;
+    }
 
-background:#0e0e0e;
-display:flex;
-justify-content:center;
-align-items:center;
-height:100vh;
-font-family:Arial, Helvetica, sans-serif;
-color:white;
+    /* barra superior */
+    #topbar {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 4px;
+      flex-shrink: 0;
+    }
 
-}
+    #title {
+      font-size: 11px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--accent);
+      opacity: 0.7;
+    }
 
-/* container externo */
+    #controls {
+      display: flex;
+      gap: 8px;
+    }
 
-#game-wrapper{
+    .ctrl-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 10px;
+      letter-spacing: 1px;
+      padding: 4px 10px;
+      cursor: pointer;
+      text-transform: uppercase;
+      transition: border-color 0.2s, color 0.2s, background 0.2s;
+    }
 
-width:95vw;
-height:95vh;
+    .ctrl-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-dim);
+    }
 
-display:flex;
-justify-content:center;
-align-items:center;
+    /* container do player */
+    #game-container {
+      flex: 1;
+      width: 100%;
+      background: #000;
+      border: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
 
-}
+    /* scanline decorativo */
+    #game-container::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.07) 2px,
+        rgba(0,0,0,0.07) 4px
+      );
+      pointer-events: none;
+      z-index: 10;
+    }
 
-/* container do jogo */
+    ruffle-player {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
 
-#game-container{
+    /* mensagem de erro */
+    #error-msg {
+      display: none;
+      position: absolute;
+      inset: 0;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      background: #0a0a0a;
+      color: var(--error);
+      font-size: 12px;
+      text-align: center;
+      padding: 20px;
+      letter-spacing: 1px;
+      z-index: 20;
+    }
 
-width:100%;
-height:100%;
+    #error-msg.visible {
+      display: flex;
+    }
 
-max-width:1200px;
-max-height:900px;
+    #error-msg strong {
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
 
-background:black;
+    #error-detail {
+      color: #666;
+      font-size: 11px;
+      max-width: 400px;
+    }
 
-display:flex;
-justify-content:center;
-align-items:center;
+    /* barra inferior de status */
+    #statusbar {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 4px;
+      flex-shrink: 0;
+      font-size: 10px;
+      letter-spacing: 1px;
+      color: #333;
+    }
 
-overflow:hidden;
+    #status-file { color: #444; }
 
-}
+    #status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #333;
+      display: inline-block;
+      margin-right: 6px;
+      transition: background 0.3s;
+    }
 
-/* player ruffle */
+    #status-dot.ready  { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+    #status-dot.error  { background: var(--error); }
+    #status-dot.loading { background: #ffaa00; animation: pulse 1s infinite; }
 
-ruffle-player{
-
-width:100%;
-height:100%;
-
-}
-
-</style>
-
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.3; }
+    }
+  </style>
 </head>
-
 <body>
 
-<div id="game-wrapper">
+<div id="app">
 
-<div id="game-container"></div>
+  <div id="topbar">
+    <span id="title">◈ SWF Player</span>
+    <div id="controls">
+      <button class="ctrl-btn" id="btn-fullscreen" title="Tela cheia">⛶ fullscreen</button>
+    </div>
+  </div>
+
+  <div id="game-container">
+    <div id="error-msg">
+      <strong>⚠ falha ao carregar</strong>
+      <span id="error-detail"></span>
+    </div>
+  </div>
+
+  <div id="statusbar">
+    <span><span id="status-dot"></span><span id="status-label">aguardando...</span></span>
+    <span id="status-file">agua.swf</span>
+  </div>
 
 </div>
 
 <script>
+  const SWF_FILE = "agua.swf";
 
-window.RufflePlayer = window.RufflePlayer || {};
+  const statusDot   = document.getElementById("status-dot");
+  const statusLabel = document.getElementById("status-label");
+  const statusFile  = document.getElementById("status-file");
+  const errorMsg    = document.getElementById("error-msg");
+  const errorDetail = document.getElementById("error-detail");
+  const container   = document.getElementById("game-container");
 
-window.addEventListener("load", () => {
+  function setStatus(state, label) {
+    statusDot.className = state;
+    statusLabel.textContent = label;
+  }
 
-const ruffle = window.RufflePlayer.newest();
+  function showError(msg) {
+    errorDetail.textContent = msg;
+    errorMsg.classList.add("visible");
+    setStatus("error", "erro");
+    console.error("[SWF Player]", msg);
+  }
 
-const player = ruffle.createPlayer();
+  window.addEventListener("load", () => {
+    statusFile.textContent = SWF_FILE;
+    setStatus("loading", "carregando ruffle...");
 
-const container = document.getElementById("game-container");
+    if (!window.RufflePlayer) {
+      showError("Ruffle não encontrado. Verifique se ruffle/ruffle.js está acessível.");
+      return;
+    }
 
-player.style.width = "100%";
-player.style.height = "100%";
+    const ruffle = window.RufflePlayer.newest();
 
-container.appendChild(player);
+    if (!ruffle) {
+      showError("Não foi possível inicializar o Ruffle.");
+      return;
+    }
 
-player.load("agua.swf");
+    const player = ruffle.createPlayer();
+    player.style.width  = "100%";
+    player.style.height = "100%";
+    container.appendChild(player);
 
-});
+    setStatus("loading", "carregando swf...");
 
+    player.load({
+      url: SWF_FILE,
+      scale: "showAll",   // preserva proporção original do SWF, letterbox se necessário
+      quality: "high",
+      letterbox: "on",    // barras pretas em vez de cortar
+      salign: "",         // centraliza o conteúdo
+    })
+    .then(() => {
+      setStatus("ready", "rodando");
+    })
+    .catch(err => {
+      showError(`Falha ao carregar ${SWF_FILE}: ${err?.message ?? err}`);
+    });
+
+    // botão fullscreen
+    document.getElementById("btn-fullscreen").addEventListener("click", () => {
+      player.requestFullscreen?.() ?? container.requestFullscreen?.();
+    });
+  });
 </script>
 
 </body>
-
 </html>
