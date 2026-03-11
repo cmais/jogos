@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flashback</title>
+  <script src="ruffle/ruffle.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+    :root {
+      --bg: #0a0a0a;
+      --surface: #111;
+      --border: #222;
+      --accent: #00e5ff;
+      --accent-dim: #00e5ff22;
+      --text: #ccc;
+      --error: #ff4d4d;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      font-family: 'Share Tech Mono', monospace;
+      color: var(--text);
+      overflow: hidden;
+    }
+
+    /* grade de fundo sutil */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 40px 40px;
+      opacity: 0.35;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    #app {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      width: 95vw;
+      height: 95vh;
+    }
+
+    /* barra superior */
+    #topbar {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 4px;
+      flex-shrink: 0;
+    }
+
+    #title {
+      font-size: 11px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--accent);
+      opacity: 0.7;
+    }
+
+    #controls {
+      display: flex;
+      gap: 8px;
+    }
+
+    .ctrl-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 10px;
+      letter-spacing: 1px;
+      padding: 4px 10px;
+      cursor: pointer;
+      text-transform: uppercase;
+      transition: border-color 0.2s, color 0.2s, background 0.2s;
+    }
+
+    .ctrl-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-dim);
+    }
+
+    /* container do player */
+    #game-container {
+      flex: 1;
+      width: 100%;
+      background: #000;
+      border: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    /* scanline decorativo */
+    #game-container::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.07) 2px,
+        rgba(0,0,0,0.07) 4px
+      );
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    ruffle-player {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* mensagem de erro */
+    #error-msg {
+      display: none;
+      position: absolute;
+      inset: 0;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      background: #0a0a0a;
+      color: var(--error);
+      font-size: 12px;
+      text-align: center;
+      padding: 20px;
+      letter-spacing: 1px;
+      z-index: 20;
+    }
+
+    #error-msg.visible {
+      display: flex;
+    }
+
+    #error-msg strong {
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    #error-detail {
+      color: #666;
+      font-size: 11px;
+      max-width: 400px;
+    }
+
+    /* barra inferior de status */
+    #statusbar {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 4px;
+      flex-shrink: 0;
+      font-size: 10px;
+      letter-spacing: 1px;
+      color: #333;
+    }
+
+    #status-file { color: #444; }
+
+    #status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #333;
+      display: inline-block;
+      margin-right: 6px;
+      transition: background 0.3s;
+    }
+
+    #status-dot.ready  { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+    #status-dot.error  { background: var(--error); }
+    #status-dot.loading { background: #ffaa00; animation: pulse 1s infinite; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.3; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="app">
+
+  <div id="topbar">
+    <span id="title">◈ Player</span>
+    <div id="controls">
+      <button class="ctrl-btn" id="btn-fullscreen" title="Tela cheia">⛶ fullscreen</button>
+    </div>
+  </div>
+
+  <div id="game-container">
+    <div id="error-msg">
+      <strong>⚠ falha ao carregar</strong>
+      <span id="error-detail"></span>
+    </div>
+  </div>
+
+  <div id="statusbar">
+    <span><span id="status-dot"></span><span id="status-label">aguardando...</span></span>
+    <span id="status-file">agua.swf</span>
+  </div>
+
+</div>
+
+<script>
+  const statusDot   = document.getElementById("status-dot");
+  const statusLabel = document.getElementById("status-label");
+  const statusFile  = document.getElementById("status-file");
+  const errorMsg    = document.getElementById("error-msg");
+  const errorDetail = document.getElementById("error-detail");
+  const container   = document.getElementById("game-container");
+  let player = null; // Variável global para o player
+
+  function setStatus(state, label) {
+    statusDot.className = state;
+    statusLabel.textContent = label;
+  }
+
+  function showError(msg) {
+    errorDetail.textContent = msg;
+    errorMsg.classList.add("visible");
+    setStatus("error", "erro");
+    console.error("[SWF Player]", msg);
+  }
+
+  // Função para alternar tela cheia
+  function toggleFullscreen() {
+    if (!player) return; // Sai se o player não estiver pronto
+
+    // Verifica se está em tela cheia
+    const isInFullscreen = document.fullscreenElement || document.mozFullScreenElement || document.webkitFullscreenElement || document.msFullscreenElement;
+
+    if (isInFullscreen) {
+      // Sai da tela cheia
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      } else if (document.mozCancelFullScreen) { // Firefox
+        document.mozCancelFullScreen();
+      } else if (document.webkitExitFullscreen) { // Chrome, Safari e Opera
+        document.webkitExitFullscreen();
+      } else if (document.msExitFullscreen) { // IE/Edge
+        document.msExitFullscreen();
+      }
+    } else {
+      // Entra em tela cheia
+      if (player.requestFullscreen) {
+        player.requestFullscreen();
+      } else if (player.mozRequestFullScreen) { // Firefox
+        player.mozRequestFullScreen();
+      } else if (player.webkitRequestFullscreen) { // Chrome, Safari e Opera
+        player.webkitRequestFullscreen();
+      } else if (player.msRequestFullscreen) { // IE/Edge
+        player.msRequestFullscreen();
+      } else if (container.requestFullscreen) { // Fallback para o container se o player falhar
+        container.requestFullscreen();
+      }
+    }
+  }
+
+  window.addEventListener("load", () => {
+    // Atualiza o nome do arquivo exibido na barra de status
+    statusFile.textContent = "agua.swf"; // Nome fixo aqui também
+    setStatus("loading", "carregando ruffle...");
+
+    if (!window.RufflePlayer) {
+      showError("Ruffle não encontrado. Verifique se ruffle/ruffle.js está acessível.");
+      return;
+    }
+
+    const ruffle = window.RufflePlayer.newest();
+
+    if (!ruffle) {
+      showError("Não foi possível inicializar o Ruffle.");
+      return;
+    }
+
+    player = ruffle.createPlayer(); // Atribui à variável global
+    player.style.width  = "100%";
+    player.style.height = "100%";
+    container.appendChild(player);
+
+    setStatus("loading", "carregando swf...");
+
+    // Carrega o arquivo diretamente aqui
+    player.load({
+      url: "f002.swf", // Nome do arquivo colocado diretamente
+      scale: "showAll",
+      quality: "high",
+      letterbox: "on",
+      salign: "",
+    })
+    .then(() => {
+      setStatus("ready", "rodando");
+    })
+    .catch(err => {
+      showError(`Falha ao carregar agua.swf: ${err?.message ?? err}`);
+    });
+
+    // Botão fullscreen
+    document.getElementById("btn-fullscreen").addEventListener("click", toggleFullscreen);
+  });
+
+  // Event listener para tecla "f"
+  document.addEventListener("keydown", (event) => {
+    if (event.key.toLowerCase() === "f") {
+      event.preventDefault(); // Previne comportamentos padrão ao pressionar 'f'
+      toggleFullscreen();
+    }
+  });
+</script>
+
+</body>
+</html>
