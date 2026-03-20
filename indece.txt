@@ -1,5 +1,10 @@
 https://cmais.github.io/jogos/f001.html
 
+006 - Titulo da pagina
+215 -  Flash is Back
+292 -  Aperte "F"
+316 - nome do arquivo ( load)
+
 agua - Sustentabilidade abril
 garfield - Garfield's Scary Scavenger Hunt
 garfield - Garfield's Scary Scavenger Hunt II
