@@ -2,6 +2,7 @@ https://cmais.github.io/jogos/f001.html
 
 agua - Sustentabilidade abril
 garfield - Garfield's Scary Scavenger Hunt
+garfield - Garfield's Scary Scavenger Hunt II
 f001 - Dora's Coking in la Cucina
 f002 - Smartkids Colorir Carnaval - (apresenta lentidão e travamento)
 f003 - Color Ginger
