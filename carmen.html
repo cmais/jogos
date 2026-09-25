@@ -52,6 +52,7 @@
     border: 1px solid var(--border);
     border-radius: 6px;
     overflow: hidden;
+    cursor: none;
   }
 
   #status {
@@ -83,13 +84,17 @@
   const status = document.getElementById("status");
 
   Dos(container, {
-    url: "carmen.jsdos"
-  }).then(function (ci) {
-    status.textContent = "";
-  }).catch(function (err) {
-    status.textContent = "Erro ao carregar o jogo.";
-    status.classList.add("error");
-    console.error("Erro ao iniciar o DOSBox:", err);
+    url: "carmen.jsdos",
+    onEvent: function (event, ci) {
+      if (event === "ci-ready") {
+        status.textContent = "";
+      }
+    },
+    onerror: function (message) {
+      status.textContent = "Erro ao carregar o jogo.";
+      status.classList.add("error");
+      console.error("Erro ao iniciar o DOSBox:", message);
+    }
   });
 </script>
 
