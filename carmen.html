@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>Carmen</title>
+
+<!-- js-dos via CDN -->
+<script src="https://v8.js-dos.com/latest/js-dos.js"></script>
+<link rel="stylesheet" href="https://v8.js-dos.com/latest/js-dos.css">
+
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --panel: #111214;
+    --border: #232427;
+    --text: #d8d8d8;
+    --muted: #6b6b6f;
+    --accent: #4a8cff;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 24px;
+  }
+
+  #wrap {
+    position: relative;
+    width: 100%;
+    max-width: 800px;
+  }
+
+  #jogo {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    background: #000;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  #status {
+    text-align: center;
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 12px;
+    min-height: 16px;
+  }
+
+  #status.error {
+    color: #e05252;
+  }
+
+
+</style>
+</head>
+<body>
+
+<div id="wrap">
+  <div id="jogo"></div>
+</div>
+
+<div id="status">carregando...</div>
+
+
+<script>
+  const container = document.getElementById("jogo");
+  const status = document.getElementById("status");
+
+  Dos(container, {
+    url: "carmen.jsdos"
+  }).then(function (ci) {
+    status.textContent = "";
+  }).catch(function (err) {
+    status.textContent = "Erro ao carregar o jogo.";
+    status.classList.add("error");
+    console.error("Erro ao iniciar o DOSBox:", err);
+  });
+</script>
+
+</body>
+</html>
